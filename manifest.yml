@@ -1,0 +1,9 @@
+---
+buildpack: https://github.com/cloudfoundry/java-buildpack.git
+applications:
+- name: mule-aws-s3-demo
+  memory: 1024m
+  instances: 1
+  host: mule-aws-s3-demo
+  path: target/mule-aws-s3-demo.zip
+  services:

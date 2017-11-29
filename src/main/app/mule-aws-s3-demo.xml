@@ -1,109 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:s3="http://www.mulesoft.org/schema/mule/s3" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:spring="http://www.springframework.org/schema/beans" 
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
-http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-http://www.mulesoft.org/schema/mule/s3 http://www.mulesoft.org/schema/mule/s3/current/mule-s3.xsd
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
-http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
-http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
-http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
-http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
-http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
-http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
-    <s3:config name="Amazon_S3__Configuration" accessKey="AKIAJRPCTDWHYAXUUHKQ" secretKey="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" doc:name="Amazon S3: Configuration">
-        <reconnect count="3"/>
-    </s3:config>
-    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
-    <file:connector name="File" readFromDirectory="C:\Users\Jamie Y L Zhang\Desktop\tmp" autoDelete="false" streaming="true" validateConnections="true" doc:name="File"/>
-    <flow name="mule-aws-s3-buckets-list-flow">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/aws/s3/buckets" doc:name="HTTP"/>
-        <s3:list-buckets config-ref="Amazon_S3__Configuration" doc:name="Amazon S3"/>
-        <logger level="INFO" doc:name="Logger"/>
-        <payload-type-filter expectedType="java.util.ArrayList" doc:name="Payload"/>
-        <dw:transform-message doc:name="Transform Message">
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/json
----
-payload]]></dw:set-payload>
-        </dw:transform-message>
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration" />
+    <apikit:config name="mule-aws-s3-demo-config" raml="mule-aws-s3-demo.raml" consoleEnabled="false" doc:name="Router" />
+    <flow name="mule-aws-s3-demo-main">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/api/*" doc:name="HTTP" >
+            <http:response-builder />
+        </http:listener>
+        <apikit:router config-ref="mule-aws-s3-demo-config" doc:name="APIkit Router" />
+        <exception-strategy ref="mule-aws-s3-demo-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy" />
     </flow>
-    <flow name="mule-aws-s3-bucket-create-object">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/aws/s3/{bucketid}" allowedMethods="POST" doc:name="HTTP"/>
-        <set-variable variableName="bucketID" value="#[message.inboundProperties.'http.uri.params'.bucketid]" doc:name="Variable"/>
-        <set-payload value="#[Thread.currentThread().getContextClassLoader().getResourceAsStream('bids.txt')]" doc:name="Set Payload"/>
-        <s3:create-object config-ref="Amazon_S3__Configuration" bucketName="#[flowVars.bucketID]" key="#[java.util.UUID.randomUUID().toString() + '.txt']" doc:name="Amazon S3"/>
-        <dw:transform-message doc:name="Transform Message">
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/json
----
-payload]]></dw:set-payload>
-        </dw:transform-message>
+    <flow name="mule-aws-s3-demo-console">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/console/*" doc:name="HTTP" />
+        <apikit:console config-ref="mule-aws-s3-demo-config" doc:name="APIkit Console" />
     </flow>
-    <flow name="mule-aws-s3-buckets-objects-list">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/aws/s3/buckets/{bucketid}/objects" allowedMethods="GET" doc:name="HTTP"/>
-        <set-variable variableName="bucketID" value="#[message.inboundProperties.'http.uri.params'.bucketid]" doc:name="Variable"/>
-        <s3:list-objects config-ref="Amazon_S3__Configuration" bucketName="#[flowVars.bucketID]" delimiter="/" doc:name="Amazon S3"/>
-        <dw:transform-message doc:name="Transform Message">
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/json
----
-payload]]></dw:set-payload>
-        </dw:transform-message>
+    <flow name="get:/buckets:mule-aws-s3-demo-config">
+        <flow-ref name="mule-aws-s3-buckets-list-flow" doc:name="Flow Reference" />
     </flow>
-    <flow name="mule-aws-s3-demoFlow">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/aws/s3/buckets/{bucketid}/objects/{objectid}" allowedMethods="GET" doc:name="HTTP"/>
-        <set-variable variableName="bucketID" value="#[message.inboundProperties.'http.uri.params'.bucketid]" doc:name="Variable"/>
-        <set-variable variableName="objectid" value="#[message.inboundProperties.'http.uri.params'.objectid]" doc:name="Variable"/>
-        <s3:get-object config-ref="Amazon_S3__Configuration" bucketName="#[flowVars.bucketID]" key="#[flowVars.objectid]" doc:name="Amazon S3"/>
-        <validation:is-not-null value="#[payload.objectContent]" doc:name="Validation"/>
-        <set-payload value="#[payload.objectContent]" encoding="UTF-8" mimeType="binary/octet-stream" doc:name="Set Payload"/>
-        <request-reply doc:name="Request-Reply">
-            <vm:outbound-endpoint exchange-pattern="one-way" path="/inbound" doc:name="VM"/>
-            <vm:inbound-endpoint exchange-pattern="one-way" path="/outbound" doc:name="VM"/>
-        </request-reply>
+    <flow name="get:/buckets/{bucketid}:mule-aws-s3-demo-config">
+        <flow-ref name="mule-aws-s3-buckets-objects-list" doc:name="Flow Reference" />
     </flow>
-    <flow name="mule-aws-s3-demoFlow1" processingStrategy="queued-asynchronous">
-        <vm:inbound-endpoint exchange-pattern="one-way" path="/inbound" doc:name="VM"/>
-        <dw:transform-message doc:name="Transform Message">
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/java
----
+    <flow name="get:/buckets/{bucketid}/{objectid}:mule-aws-s3-demo-config">
+        <flow-ref name="mule-aws-s3-buckets-object-info" doc:name="Flow Reference" />
+    </flow>
+    <flow name="post:/buckets/{bucketid}:mule-aws-s3-demo-config">
+        <flow-ref name="mule-aws-s3-bucket-create-object" doc:name="Flow Reference" />
+    </flow>
+    <flow name="delete:/buckets/{bucketid}/{objectid}:mule-aws-s3-demo-config">
+        <flow-ref name="mule-aws-s3-buckets-object-delete-flow" doc:name="Flow Reference"/>
 
-payload splitBy "\n"]]></dw:set-payload>
-        </dw:transform-message>
-        <collection-splitter enableCorrelation="ALWAYS" doc:name="Collection Splitter"/>
-        <not-filter doc:name="Not">
-            <expression-filter expression="#[payload == empty]"/>
-        </not-filter>
-        <dw:transform-message doc:name="Transform Message">
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/java
----
-payload splitBy ';']]></dw:set-payload>
-        </dw:transform-message>
-        <logger level="INFO" doc:name="Logger"/>
-        <dw:transform-message doc:name="Transform Message">
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/java
----
-{
-	"b_id": ((payload[1] splitBy '=')[1]),
-	"amount": ((payload[0] splitBy '=')[1]) as :number
-}]]></dw:set-payload>
-        </dw:transform-message>
-        <collection-aggregator timeout="60000" failOnTimeout="true"   tracking:enable-default-events="true" doc:name="Collection Aggregator"/>
-        <dw:transform-message doc:name="Transform Message">
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/json
----
-(payload groupBy $.b_id map {
-	id: $.b_id[0],
-	totalAmount: sum $.amount
-}) orderBy $.id]]></dw:set-payload>
-        </dw:transform-message>
-        <vm:outbound-endpoint exchange-pattern="one-way" path="/outbound" doc:name="VM"/>
     </flow>
+    <flow name="post:/buckets:mule-aws-s3-demo-config">
+        <flow-ref name="mule-aws-s3-buckets-create-flow" doc:name="Flow Reference"/>
+
+    </flow>
+    <apikit:mapping-exception-strategy name="mule-aws-s3-demo-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
 </mule>

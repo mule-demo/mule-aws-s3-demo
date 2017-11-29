@@ -3,4 +3,5 @@
     <name>mule-aws-s3-demo</name>
     <description></description>
     <muleExtension name="Amazon S3" qualifier="org.mule.tooling.ui.contribution.s3.3.5.0"/>
+    <muleExtension name="Secure Property Placeholder" qualifier="org.mule.tooling.ui.contribution.secure-property-placeholder.3.9.0"/>
 </mule-project>

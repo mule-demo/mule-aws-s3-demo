@@ -1,0 +1,65 @@
+#%RAML 0.8
+title: AWS S3 demo
+/buckets:
+  description: aws buckets
+  get: 
+    responses: 
+      200: 
+        body: 
+          application/json:
+  post: 
+    description: create a buckets
+    body: 
+      application/json: 
+        example: | 
+         {"bucketName":"xxx"}
+    responses: 
+     200: 
+      body:  
+        application/json: 
+        
+  /{bucketid}:
+    description: specified bucket
+    uriParameters: 
+      bucketid:
+        default: tech-s3-demo
+        displayName: Bucket ID
+        required: true
+    get: 
+      description: list all object under bucket
+      responses: 
+        200: 
+         body: 
+          application/json: 
+    post: 
+      description: create an object to bucket
+      responses: 
+        200: 
+          body: 
+            application/json: 
+            
+    /{objectid}:
+      description: specify object under specific bucket
+      uriParameters:
+       objectid:
+         displayName: Object ID
+         type: string
+         default: bids.txt
+         required: true
+      get: 
+        description:  retrieve specified object information
+        responses:  
+          200: 
+            body: 
+              application/json: 
+                example: !include examples/getObjectInfoResponse.json
+      delete: 
+        description: delete object from bucket
+        responses: 
+          200: 
+            body: 
+              application/json: 
+                  
+        
+      
+  

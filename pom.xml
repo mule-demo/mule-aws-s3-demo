@@ -30,6 +30,10 @@
                             <groupId>org.mule.modules</groupId>
                             <artifactId>mule-module-s3</artifactId>
                         </inclusion>
+                    <inclusion>
+                            <groupId>com.mulesoft.security</groupId>
+                            <artifactId>mule-module-security-property-placeholder</artifactId>
+                        </inclusion>
                     </inclusions>
                 </configuration>
 			</plugin>
@@ -164,6 +168,17 @@
             <artifactId>mule-transport-jms</artifactId>
             <version>${mule.version}</version>
             <scope>provided</scope>
+        </dependency>
+    <dependency>
+            <groupId>org.mule.modules</groupId>
+            <artifactId>mule-module-json</artifactId>
+            <version>${mule.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    <dependency>
+            <groupId>com.mulesoft.security</groupId>
+            <artifactId>mule-module-security-property-placeholder</artifactId>
+            <version>1.7.1</version>
         </dependency>
     </dependencies>
 
